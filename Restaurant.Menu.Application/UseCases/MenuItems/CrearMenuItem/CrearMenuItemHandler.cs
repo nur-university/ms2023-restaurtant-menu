@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Restaurant.Menu.Application.Services;
 using Restaurant.Menu.Domain.Model.MenuItems;
 using Restaurant.Menu.Domain.Repositories;
 using Restaurant.SharedKernel.Core;
@@ -15,7 +16,9 @@ namespace Restaurant.Menu.Application.UseCases.MenuItems.CrearMenuItem
         private readonly IMenuItemRepository _menuItemRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public CrearMenuItemHandler(IMenuItemRepository menuItemRepository, IUnitOfWork unitOfWork)
+        public CrearMenuItemHandler(IMenuItemRepository menuItemRepository,
+            IUnitOfWork unitOfWork
+            )
         {
             _menuItemRepository = menuItemRepository;
             _unitOfWork = unitOfWork;
@@ -24,9 +27,11 @@ namespace Restaurant.Menu.Application.UseCases.MenuItems.CrearMenuItem
         public async Task<Guid> Handle(CrearMenuItemCommand request, CancellationToken cancellationToken)
         {
             TipoItem tipo = request.TipoItem == CrearMenuItemCommand.TipoMenuItem.Receta ? TipoItem.Receta : TipoItem.Inventariable;
-            var menuItem = new MenuItem(request.CategoriaId, request.Nombre, tipo, request.Descripcion, request.Precio);
+            var menuItem = MenuItem.Create(request.CategoriaId, request.Nombre, tipo, request.Descripcion, request.Precio);
             await _menuItemRepository.CreateAsync(menuItem);
             await _unitOfWork.Commit();
+            
+
             return menuItem.Id;
         }
     }

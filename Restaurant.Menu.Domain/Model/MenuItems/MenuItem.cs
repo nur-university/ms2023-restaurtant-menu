@@ -1,4 +1,5 @@
-﻿using Restaurant.SharedKernel.Core;
+﻿using Restaurant.Menu.Domain.Model.MenuItems.Events;
+using Restaurant.SharedKernel.Core;
 using Restaurant.SharedKernel.Rules;
 using System;
 using System.Collections.Generic;
@@ -21,8 +22,9 @@ namespace Restaurant.Menu.Domain.Model.MenuItems
 
         public Guid CategoriaMenuId { get; private set; }
 
-        public MenuItem(Guid categoriaMenuId, string nombre, TipoItem tipo, string descripcion, decimal precio)
+        internal MenuItem(Guid categoriaMenuId, string nombre, TipoItem tipo, string descripcion, decimal precio)
         {
+            Id = Guid.NewGuid();
             CheckRule(new StringNotNullOrEmptyRule(nombre));
             if (categoriaMenuId == Guid.Empty)
                 throw new BussinessRuleValidationException("La categoria no puede ser vacia");
@@ -41,6 +43,18 @@ namespace Restaurant.Menu.Domain.Model.MenuItems
             Descripcion = descripcion;
             Precio = precio;
             Activo = activo;
+        }
+
+        public static MenuItem Create(Guid categoriaMenuId, string nombre, TipoItem tipo, string descripcion, decimal precio)
+        {
+            var obj = new MenuItem(categoriaMenuId, nombre, tipo, descripcion, precio);
+            obj.AddDomainEvent(new MenuItemCreado(
+                    obj.Id,
+                    obj.Nombre,
+                    obj.Tipo == TipoItem.Receta,
+                    obj.Tipo == TipoItem.Inventariable
+                ));
+            return obj;
         }
 
         private MenuItem() { }

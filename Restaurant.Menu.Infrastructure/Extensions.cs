@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Restaurant.Menu.Application;
+using Restaurant.Menu.Application.Services;
 using Restaurant.Menu.Domain.Repositories;
 using Restaurant.Menu.Infrastructure.EF;
 using Restaurant.Menu.Infrastructure.EF.Contexts;
 using Restaurant.Menu.Infrastructure.EF.Repositories;
+using Restaurant.Menu.Infrastructure.MassTransit;
 using Restaurant.Menu.Infrastructure.Security;
 using Restaurant.SharedKernel.Core;
 using System;
@@ -30,6 +33,8 @@ namespace Restaurant.Menu.Infrastructure
             AddDatabase(services, configuration, isDevelopment);
 
             AddAuthentication(services, configuration);
+
+            AddMassTransitWithRabbitMq(services, configuration);
 
             return services;
         }
@@ -75,6 +80,31 @@ namespace Restaurant.Menu.Infrastructure
                     ValidAudience = jwtoptions.ValidAudience
                 };
             });
+        }
+
+        private static IServiceCollection AddMassTransitWithRabbitMq(IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddScoped<IBusService, MassTransitBusService>();
+
+            var serviceName = configuration.GetValue<string>("ServiceName");
+            var rabbitMQSettings = configuration.GetSection(nameof(RabbitMQSettings)).Get<RabbitMQSettings>();
+
+            services.AddMassTransit(configure =>
+            {
+               
+                configure.UsingRabbitMq((context, configurator) =>
+                {
+
+                    configurator.Host(rabbitMQSettings.Host);
+                    configurator.ConfigureEndpoints(context, new KebabCaseEndpointNameFormatter(serviceName, false));
+                    configurator.UseMessageRetry(retryConfigurator =>
+                    {
+                        retryConfigurator.Interval(3, TimeSpan.FromSeconds(5));
+                    });
+                });
+            });
+
+            return services;
         }
     }
 }
