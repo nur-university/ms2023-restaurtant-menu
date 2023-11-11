@@ -4,14 +4,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Quartz;
 using Restaurant.Menu.Application;
 using Restaurant.Menu.Application.Services;
 using Restaurant.Menu.Domain.Repositories;
+using Restaurant.Menu.Infrastructure.BackgroundJobs;
 using Restaurant.Menu.Infrastructure.EF;
 using Restaurant.Menu.Infrastructure.EF.Contexts;
 using Restaurant.Menu.Infrastructure.EF.Repositories;
 using Restaurant.Menu.Infrastructure.MassTransit;
 using Restaurant.Menu.Infrastructure.Security;
+using Restaurant.Menu.Infrastructure.Services;
 using Restaurant.SharedKernel.Core;
 using System;
 using System.Collections.Generic;
@@ -30,11 +33,15 @@ namespace Restaurant.Menu.Infrastructure
             services.AddApplication();
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
+            services.AddScoped<IOutboxService, OutboxService>();
+            
             AddDatabase(services, configuration, isDevelopment);
 
             AddAuthentication(services, configuration);
 
             AddMassTransitWithRabbitMq(services, configuration);
+
+            AddQuartz(services);
 
             return services;
         }
@@ -103,6 +110,28 @@ namespace Restaurant.Menu.Infrastructure
                     });
                 });
             });
+
+            return services;
+        }
+
+        public static IServiceCollection AddQuartz(IServiceCollection services)
+        {
+            services.AddQuartz(configure =>
+            {
+                var jobKey = new JobKey(nameof(OutboxProcessor));
+
+                configure
+                    .AddJob<OutboxProcessor>(jobKey)
+                    .AddTrigger(trigger =>
+                    {
+                        trigger.ForJob(jobKey)
+                            .WithSimpleSchedule(schedule => schedule.WithIntervalInSeconds(10).RepeatForever());
+                    });
+
+                configure.UseMicrosoftDependencyInjectionJobFactory();
+            });
+
+            services.AddQuartzHostedService();
 
             return services;
         }

@@ -12,24 +12,16 @@ namespace Restaurant.Menu.Application.EventHandlers
     internal class NotificarServiciosWhenMenuItemCreado : INotificationHandler<MenuItemCreado>
     {
 
-        private readonly IBusService _bus;
+        private readonly IOutboxService _outboxService;
 
-        public NotificarServiciosWhenMenuItemCreado(IBusService bus)
+        public NotificarServiciosWhenMenuItemCreado(IOutboxService outboxService)
         {
-            _bus = bus;
+            _outboxService = outboxService;
         }
 
-        public async Task Handle(MenuItemCreado notification, CancellationToken cancellationToken)
+        public Task Handle(MenuItemCreado notification, CancellationToken cancellationToken)
         {
-            IntegrationEvents.MenuItemCreado evento = new IntegrationEvents.MenuItemCreado()
-            {
-                MenuItemId = notification.MenuItemId,
-                Nombre = notification.Nombre,
-                EsReceta = notification.EsReceta,
-                EsInventariable = notification.EsInventariable
-            };
-
-            await _bus.PublishAsync(evento);
+            return _outboxService.Add(notification);
         }
     }
 }

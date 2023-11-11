@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Restaurant.Menu.Application.OutBox;
 using Restaurant.Menu.Domain.Model.Categoria;
 using Restaurant.Menu.Domain.Model.MenuItems;
 using Restaurant.Menu.Infrastructure.EF.DomainConfig;
@@ -16,6 +17,8 @@ namespace Restaurant.Menu.Infrastructure.EF.Contexts
     {
         public virtual DbSet<MenuItem> MenuItem { set; get; }
         public virtual DbSet<CategoriaMenu> Categoria { get; set; }
+
+        public virtual DbSet<OutboxMessage<DomainEvent>> OutboxMessage { get; set; }
         
         public DomainDbContext(DbContextOptions<DomainDbContext> options) : base(options)
         {
@@ -27,6 +30,7 @@ namespace Restaurant.Menu.Infrastructure.EF.Contexts
             
             modelBuilder.ApplyConfiguration(new CategoriaMenuConfig());
             modelBuilder.ApplyConfiguration(new MenuItemConfig());
+            modelBuilder.ApplyConfiguration(new OutboxMessageConfig());
 
             modelBuilder.Ignore<DomainEvent>();
         }

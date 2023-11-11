@@ -12,6 +12,7 @@ namespace Restaurant.Menu.Infrastructure.EF.Contexts
     {
         public virtual DbSet<MenuItemPersistenceModel> MenuItem { set; get; }
         public virtual DbSet<CategoriaMenuPersistenceModel> Categoria { get; set; }
+        public virtual DbSet<OutboxPersistenceModel> Outbox { get; set; }
 
         public PersistenceDbContext(DbContextOptions<PersistenceDbContext> options) : base(options)
         {
